@@ -1,0 +1,112 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+
+class starStruct {
+	float3 pos;
+	float3 vel;
+	float mass;
+};
+
+
+RWStructuredBuffer<starStruct> starBuffer;
+RWStructuredBuffer<uint2> pastPosition;
+uint lengthOfBuffer;
+matrix cameraProjection;
+float farPlane;
+float nearPlane;
+
+RWTexture2D<float4> depthTexture;
+RWTexture2D<float4> Result;
+
+float width;
+float height;
+//uint leftOff = 0;
+//uint halfspot = 0;
+//uint switchHalves = 0;
+
+float LinearEyeDepth(float rawdepth)
+{
+	float x, y, z, w;
+#if SHADER_API_GLES3 // insted of UNITY_REVERSED_Z
+	x = -1.0 + nearPlane / farPlane;
+	y = 1;
+	z = x / nearPlane;
+	w = 1 / nearPlane;
+#else
+	x = 1.0 - nearPlane / farPlane;
+	y = nearPlane / farPlane;
+	z = x / nearPlane;
+	w = y / nearPlane;
+#endif
+
+	return 1.0 / (z * rawdepth + w);
+}
+
+[numthreads(256,1,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    // TODO: insert actual code here!
+	//starBuffer[id.x].pos = mul(starBuffer[id.x].mass, float4(starBuffer[id.x].pos, 1.0));
+	float3 _force = float3(0.0f, 0.0f, 0.0f);
+	
+	//Result[pastPosition[id.x]] = float4(0, 0, 0, 255);
+
+	for (uint i = 0; i < lengthOfBuffer; i++)
+	{
+		if (i == id.x) {
+			continue;
+		}
+
+		float _distance = distance(starBuffer[i].pos, starBuffer[id.x].pos);
+
+		float3 _direction = starBuffer[i].pos - starBuffer[id.x].pos;
+
+		_direction = normalize(_direction);
+
+		if (_distance <= 1) {
+			float denom = _distance + 1.5f;
+
+			float multMass = starBuffer[id.x].mass * starBuffer[i].mass;
+
+			float g = (-multMass / denom) + multMass / 1.5f;
+
+			float3 m_force = _direction * g;
+
+			_force += m_force;
+		}
+		else {
+			float denom = _distance * _distance;
+
+			float g = starBuffer[id.x].mass * starBuffer[i].mass / denom;
+
+			float3 m_force = _direction * g;
+
+			_force += m_force;
+		}
+
+	}
+
+
+	//Result[pastPosition[id.x]] = float4(0, 0, 0, 255);
+
+
+	starBuffer[id.x].pos += starBuffer[id.x].vel + _force;
+	starBuffer[id.x].vel += _force;
+
+
+	float3 position = starBuffer[id.x].pos;
+	float4 viewPosition = mul(cameraProjection, float4(position.x, position.y, position.z, 1)).xyzw;
+	float depth = viewPosition.z;
+	viewPosition = viewPosition / viewPosition.w*0.5f;
+	uint2 screenPosition = uint2((viewPosition.x * width) + (width / uint(2)), (viewPosition.y * height) + (height / uint(2)));
+	pastPosition[id.x] = screenPosition;
+	//if (LinearEyeDepth(depthTexture[screenPosition].r) * farPlane < depth) return;
+
+	Result[screenPosition] = lerp(Result[screenPosition], float4(255, 255, 255, 255), 100 / depth);
+
+}
+
+

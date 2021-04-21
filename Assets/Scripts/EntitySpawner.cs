@@ -1,4 +1,6 @@
-﻿using Unity.Entities;
+﻿
+/*
+using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
@@ -126,7 +128,7 @@ public class EntitySpawner : MonoBehaviour
         {
             entityManager.DestroyEntity(entities[i]);
             
-        }*/
+        }
         //entities.Clear();
         computeManager.buffer.Dispose();
         computeManager.pastPositionBuffer.Dispose();
@@ -212,7 +214,7 @@ public class EntitySpawner : MonoBehaviour
             entityManager.SetComponentData(_entity, new StarIndex
             {
                 index = i 
-            });*/
+            });
 
             var pos = ComputeShaderManager.data[i].position = new float3(referencePoint + offset);
             if (randomMass)
@@ -262,7 +264,7 @@ public class EntitySpawner : MonoBehaviour
             entityManager.SetComponentData(_entity, new StarIndex
             {
                 index = i
-            });*/
+            });
 
             var pos = ComputeShaderManager.data[i].position = new float3(referencePoint + offset);
             if (randomMass)
@@ -320,7 +322,7 @@ public class EntitySpawner : MonoBehaviour
                 entityManager.SetComponentData(_entity, new StarIndex
                 {
                     index = d
-                });*/
+                });
 
                 //ComputeShaderManager.data[d].position = new float3(positions[i] + offset);
                 var pos = ComputeShaderManager.data[d].position = new float3(positions[i] + offset);
@@ -371,7 +373,7 @@ public class EntitySpawner : MonoBehaviour
                 index = i
             });
             entities.Add(_entity);
-            */
+            
 
             ComputeShaderManager.data[i].position = new float3(referencePoint + offset);
             var pos = ComputeShaderManager.data[i].position = new float3(referencePoint + offset);
@@ -399,3 +401,4 @@ public class EntitySpawner : MonoBehaviour
 
 }
 
+*/

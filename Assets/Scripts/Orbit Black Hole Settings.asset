@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1a11ace413e4daa40997f812c095a753, type: 3}
+  m_Name: Orbit Black Hole Settings
+  m_EditorClassIdentifier: 
+  NumberOfBlackHoles: 2
+  BlackHolePositions:
+  - {x: 0, y: 0, z: 0}
+  - {x: 10000, y: 1000, z: 0}
+  BlackHoleRotations:
+  - {x: -25, y: 0, z: 15}
+  - {x: 35, y: 0, z: 0}
+  BlackHoleInitialVelocity:
+  - {x: 1, y: 0, z: 0.2}
+  - {x: -1, y: 0, z: -0.5}
+  Radius: 4000
+  BlackHoleMass: 500000
+  HeightDisplacement: 100

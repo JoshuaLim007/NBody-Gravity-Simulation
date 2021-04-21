@@ -6,6 +6,7 @@ using Unity.Collections;
 
 public class OctreeOptimization : MonoBehaviour
 {
+    /*
     public GameObject testObj;
     public GameObject debugCube;
     public Octree RootOctree;
@@ -43,8 +44,9 @@ public class OctreeOptimization : MonoBehaviour
     {
 
     }
+    */
 }
-
+/*
 public class Octree
 {
     public float Size;
@@ -258,3 +260,4 @@ public class Octree
         BottomLeftBack.Insert(point);
     }
 }
+*/

@@ -15,159 +15,92 @@ public struct StarStruct
     public Vector3 position;
     public Vector3 velocity;
     public float mass;
+    public float forceMag;
 }
 
 public class ComputeShaderManager : MonoBehaviour
 {
-
-    public static StarStruct[] data;
-    public static StarStruct[] outputData;
-
-    RenderTexture blankClear;
-    public RenderTexture rTexture;
-    public Material material;
-
-    private EntitySpawner spawner;
-    public ComputeBuffer buffer;
-    public ComputeShader compute;
-    public ComputeBuffer pastPositionBuffer;
+    [SerializeField] private NBodyAttributes settings;
+    public static StarStruct[] Data { get; set; }
+    //[SerializeField] private static StarStruct[] outputData;
+    [SerializeField] private RenderTexture TargetTexture;
+    [SerializeField] private Material material;
+    [SerializeField] private DataSpawner spawner;
+    [SerializeField] private ComputeBuffer currentPositionBuffer;
+    [SerializeField] private ComputeShader compute;
+    //[SerializeField] private ComputeBuffer pastPositionBuffer;
 
     int kernal;
-    static OctreeOptimization octreeOptimization;
     new Camera camera;
+
     private void Awake()
     {
         camera = Camera.main;
-        octreeOptimization = GetComponent<OctreeOptimization>();
-        spawner = FindObjectOfType<EntitySpawner>();
-        //data is initialized in entity spawner
-        data = new StarStruct[spawner.amount];
-        outputData = new StarStruct[spawner.amount];
+        spawner = FindObjectOfType<DataSpawner>();
+        Data = new StarStruct[spawner.Amount];
+        InitializeComputeShader();
+        //outputData = new StarStruct[spawner.amount];
     }
 
     private void Start()
     {
         compute.SetFloat("width", camera.pixelWidth);
         compute.SetFloat("height", camera.pixelHeight);
-        blankClear = new RenderTexture(camera.pixelWidth, camera.pixelHeight, 24);
-    }
-    //Method called in EntitySpawner script
-    public void InitializeComputeBuffer()
-    {
-        buffer = new ComputeBuffer(data.Length, 28);
-        buffer.SetData(data);
-        kernal = compute.FindKernel("CSMain");
-        compute.SetBuffer(kernal, "starBuffer", buffer);
-
-        pastPositionBuffer = new ComputeBuffer(data.Length, 8);
-        Vector2[] posDatas = new Vector2[data.Length];
-        pastPositionBuffer.SetData(posDatas);
-
-        compute.SetBuffer(kernal, "pastPosition", pastPositionBuffer);
-        //tempPosBuffer.Dispose();
-
-        compute.SetInt("lengthOfBuffer", data.Length);
-        compute.SetMatrix("cameraProjection", camera.projectionMatrix * camera.worldToCameraMatrix);
-        compute.SetFloat("farPlane", camera.farClipPlane);
-        compute.SetFloat("nearPlane", camera.nearClipPlane);
-
-        rTexture = new RenderTexture(camera.pixelWidth, camera.pixelHeight, 24);
-        rTexture.enableRandomWrite = true;
-        rTexture.Create();
-
-        compute.SetTexture(kernal, "Result", rTexture);
-    }
-
-
-    private void Update()
-    {
-        if (!spawner.destroyed)
-        {
-            //rTexture = new RenderTexture(camera.pixelWidth, camera.pixelHeight, 24);
-            //rTexture.enableRandomWrite = true;
-
-            compute.SetMatrix("cameraProjection", camera.projectionMatrix * camera.worldToCameraMatrix);
-            compute.SetFloat("farPlane", camera.farClipPlane);
-            compute.SetFloat("nearPlane", camera.nearClipPlane);
-
-            GL.Clear(true, true, Color.clear);
-
-            RenderTexture rt = RenderTexture.active;
-            RenderTexture.active = rTexture;
-            GL.Clear(true, true, Color.clear);
-            RenderTexture.active = rt;
-
-            compute.Dispatch(kernal, 256, 1, 1);
-
-            compute.SetTexture(kernal, "Result", rTexture);
-
-            buffer.GetData(outputData);
-
-            material.SetTexture("_BaseMap", rTexture);
-
-        }
-        #region octree
-        //for (int i = 0; i < data.Length; i++)
-        //{
-        //    var force = octreeOptimization.RootOctree.CalculateForce(data[i]);
-        //    data[i].position += data[i].velocity + force;
-        //    data[i].velocity += force;
-        //}
-
-        /*
-
-        var dataJob = new JobData();
-        var handle = dataJob.Schedule(data.Length, 8);
-        handle.Complete();
-
-        octreeOptimization.RootOctree = new Octree();
-        octreeOptimization.RootOctree.Size = 500;
-        octreeOptimization.RootOctree.particle = new List<StarStruct>();
-        octreeOptimization.RootOctree.position = transform.position;
-
-        for (int i = 0; i < data.Length; i++)
-        {
-            octreeOptimization.RootOctree.Insert(data[i]);
-        }*/
-        #endregion
-    }
-
-    private void LateUpdate()
-    {
-
-    }
-
-    struct JobData : IJobParallelFor
-    {
-        public void Execute(int index)
-        {
-            var force = octreeOptimization.RootOctree.CalculateForce(data[index]);
-            data[index].position += data[index].velocity + force;
-            data[index].velocity += force;
-        }
+        material.SetFloat("_AlphaClip", 0);
     }
 
     private void OnDisable()
     {
-        pastPositionBuffer.Dispose();
-        buffer.Dispose();   
+        DestroyBuffer();
+        material.SetFloat("_AlphaClip", 1);
     }
 
-}
-
-[BurstCompile]
-public class CompSystem : ComponentSystem
-{
-    public StarStruct[] starStructs;
-    protected override void OnUpdate()
+    public void InitializeComputeShader()
     {
-        //starStructs = ComputeShaderManager.outputData;
-        //starStructs = ComputeShaderManager.data;
-        //Entities.ForEach((ref Translation tr, ref StarIndex si) => {
-            //tr.Value = new float3(starStructs[si.index].position);
-        //});
+        currentPositionBuffer = new ComputeBuffer(Data.Length, 32);
+        currentPositionBuffer.SetData(Data);
+        kernal = compute.FindKernel("CSMain");
+        compute.SetBuffer(kernal, "starBuffer", currentPositionBuffer);
+        compute.SetInt("lengthOfBuffer", Data.Length);
+        compute.SetMatrix("cameraProjection", camera.projectionMatrix * camera.worldToCameraMatrix);
+        compute.SetFloat("farPlane", camera.farClipPlane);
+        compute.SetFloat("nearPlane", camera.nearClipPlane);
+
+        TargetTexture = new RenderTexture(camera.pixelWidth, camera.pixelHeight, 24);
+        TargetTexture.enableRandomWrite = true;
+        TargetTexture.Create();
+
+        compute.SetTexture(kernal, "Result", TargetTexture);
+    }
+    public void DestroyBuffer()
+    {
+        currentPositionBuffer.Dispose();
+        //pastPositionBuffer.Dispose();
+    }
+    public void CreateBuffer(int size)
+    {
+        Data = new StarStruct[size];
+        //outputData = new StarStruct[size];
+    }
+
+    private void Update()
+    {
+        compute.SetMatrix("cameraProjection", camera.projectionMatrix * camera.worldToCameraMatrix);
+        compute.SetFloat("distanceScaler", settings.DistanceScaler);
+        compute.SetVector("color", settings.Color);
+        compute.SetVector("secondaryColor", settings.SecondaryColor);
+        compute.SetFloat("radius", settings.Radius);
+        compute.SetFloat("timeScale", settings.TimeScale);
+
+        RenderTexture rt = RenderTexture.active;
+        RenderTexture.active = TargetTexture;
+        GL.Clear(true, true, Color.clear);
+        RenderTexture.active = rt;
+
+        compute.Dispatch(kernal, 256, 1, 1);
+
+        compute.SetTexture(kernal, "Result", TargetTexture);
+
+        material.SetTexture("_BaseMap", TargetTexture);
     }
 }
-
-
-

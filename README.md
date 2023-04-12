@@ -2,6 +2,10 @@
 # NbodySim
 Brute Force calculation of n body simulation using compute shaders with Unity Engine.
 
+**Dev Requirements:**
+ - Unity 2020.3 LTS
+ - Unity URP
+
 **Video**
 https://www.reddit.com/r/Unity3D/comments/mol5zx/i_made_a_realtime_galaxy_simulation_using_compute/
 
